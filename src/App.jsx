@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/Login/LoginPage';
-import DashboardPage from './pages/dashboard/index';
+import DashboardPage from "./pages/Dashboard/index";
 import PropertiesPage from './pages/Properties/PropertiesPage';
 import PropertyDetailPage from './pages/Properties/PropertyDetailPage';
 import TenantsPage from './pages/Tenants/TenantsPage';
