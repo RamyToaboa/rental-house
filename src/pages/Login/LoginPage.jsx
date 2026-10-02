@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -15,19 +15,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-
-  const containerRef = useRef(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 20;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 20;
-    setMousePos({ x, y });
-  };
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -39,57 +27,40 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 900);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-slate-950">
+    // 👇 Full viewport background — no gap at bottom
+    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950">
       
       {/* ============================================ */}
-      {/* LEFT PANEL — Animated Brand Showcase         */}
+      {/* LEFT PANEL — Brand Showcase                  */}
       {/* ============================================ */}
-      <div 
-        ref={containerRef}
-        onMouseMove={handleMouseMove}
-        className="relative hidden w-1/2 overflow-hidden bg-slate-900 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16"
-      >
+      <div className="relative hidden w-1/2 overflow-hidden bg-slate-900 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
         
-        <div className="absolute inset-0 animate-gradient-shift bg-linear-to-br from-emerald-600 via-teal-700 to-emerald-900" />
-        
-        <div 
-          className="absolute -top-40 -right-40 h-125 w-125 animate-float-slow rounded-full bg-emerald-400/30 blur-3xl"
-          style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}
-        />
-        <div 
-          className="absolute top-1/3 -left-40 h-100 w-100 animate-float-medium rounded-full bg-teal-400/25 blur-3xl"
-          style={{ transform: `translate(${mousePos.x * 0.8}px, ${mousePos.y * 0.8}px)` }}
-        />
-        <div 
-          className="absolute -bottom-40 right-1/4 h-112.5 w-112.5 animate-float-fast rounded-full bg-emerald-300/15 blur-3xl"
-          style={{ transform: `translate(${mousePos.x * 0.6}px, ${mousePos.y * 0.6}px)` }}
-        />
+        <div className="absolute inset-0 bg-linear-to-br from-emerald-600 via-teal-700 to-emerald-900" />
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-emerald-400/30 blur-3xl" />
+        <div className="absolute top-1/3 -left-40 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl" />
+        <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-emerald-300/10 blur-3xl" />
 
         <div 
-          className="absolute inset-0 opacity-[0.08]"
+          className="absolute inset-0 opacity-[0.07]"
           style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`,
-            backgroundSize: '50px 50px',
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
           }}
         />
 
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
-
-        {/* Content */}
-        <div className="relative z-10 animate-fade-in-up">
+        <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="group relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md ring-1 ring-white/20 transition-all hover:bg-white/25">
-              <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 blur-md transition-opacity group-hover:opacity-100" />
-              <Home className="relative h-6 w-6 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md ring-1 ring-white/20">
+              <Home className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-white">RealEstate Pro</h1>
@@ -101,56 +72,44 @@ const LoginPage = () => {
         </div>
 
         <div className="relative z-10 max-w-lg">
-          
-          <div className="mb-6 inline-flex animate-fade-in-up delay-100 items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
-            <div className="relative flex h-2 w-2 items-center justify-center">
-              <span className="absolute h-2 w-2 animate-ping rounded-full bg-emerald-300 opacity-75" />
-              <span className="h-2 w-2 rounded-full bg-emerald-300" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-sm">
+            <div className="flex h-1.5 w-1.5 items-center justify-center">
+              <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-emerald-300 opacity-75" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
             </div>
             <span className="text-xs font-medium text-white">
               Trusted by 2,000+ property managers
             </span>
           </div>
 
-          <h2 className="animate-fade-in-up delay-200 text-4xl font-bold leading-[1.15] tracking-tight text-white xl:text-5xl">
+          <h2 className="text-4xl font-bold leading-[1.15] tracking-tight text-white xl:text-5xl">
             Manage your properties with
             <span className="relative ml-2 inline-block">
-              {/* 👇 Typing text — full natural width, no cutting off */}
-              <span className="typing-text relative z-10">confidence.</span>
-              
-              {/* 👇 Blinking cursor at the end of the word */}
-              <span className="typing-cursor" />
-              
-              {/* 👇 Emerald underline appears after typing finishes */}
-              <span className="absolute bottom-1 left-0 h-3 w-full origin-left scale-x-0 animate-[scale-x_0.6s_ease-out_2.1s_forwards] bg-emerald-400/40" />
+              <span className="relative z-10">confidence.</span>
+              <span className="absolute bottom-1 left-0 h-3 w-full origin-left scale-x-0 animate-[scale-x_1s_ease-out_0.8s_forwards] bg-emerald-400/40" />
             </span>
           </h2>
 
-          <p className="mt-5 animate-fade-in-up delay-300 text-base leading-relaxed text-emerald-50/80">
+          <p className="mt-5 text-base leading-relaxed text-emerald-50/80">
             Track tenants, leases, payments, and maintenance — all in one beautiful dashboard built for modern property managers.
           </p>
 
-          <div className="mt-8 space-y-3">
+          <div className="mt-8 space-y-3.5">
             {[
               { icon: Zap, text: 'Real-time tenant management' },
               { icon: TrendingUp, text: 'Automated rent & payment tracking' },
               { icon: Shield, text: 'Enterprise-grade security' },
-            ].map(({ icon: Icon, text }, idx) => (
-              <div 
-                key={text} 
-                className={`group flex animate-fade-in-up items-center gap-3 delay-${(idx + 4) * 100}`}
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/25">
-                  <Icon className="h-4 w-4 text-white" />
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+                  <Icon className="h-3.5 w-3.5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-emerald-50 transition-colors group-hover:text-white">
-                  {text}
-                </span>
+                <span className="text-sm font-medium text-emerald-50">{text}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-10 flex animate-fade-in-up items-center gap-6 border-t border-white/15 pt-6 delay-700">
+          <div className="mt-10 flex items-center gap-6 border-t border-white/15 pt-6">
             <div>
               <p className="text-2xl font-bold text-white">4.9/5</p>
               <p className="text-[11px] font-medium text-emerald-200/70">Average rating</p>
@@ -168,7 +127,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <div className="relative z-10 flex animate-fade-in items-center justify-between text-xs text-emerald-100/60 delay-700">
+        <div className="relative z-10 flex items-center justify-between text-xs text-emerald-100/60">
           <span>© {new Date().getFullYear()} RealEstate Pro</span>
           <div className="flex items-center gap-4">
             <button className="transition-colors hover:text-white">Privacy</button>
@@ -178,15 +137,16 @@ const LoginPage = () => {
       </div>
 
       {/* ============================================ */}
-      {/* RIGHT PANEL — Clean Login Form               */}
+      {/* RIGHT PANEL — Login Form                     */}
       {/* ============================================ */}
-      <div className="relative flex w-full flex-col overflow-hidden lg:w-1/2">
+      <div className="relative flex w-full flex-col bg-gray-50 lg:w-1/2 dark:bg-slate-950">
         
-        <div className="pointer-events-none absolute -top-32 -right-32 h-64 w-64 animate-float-slow rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/10" />
-        <div className="pointer-events-none absolute -bottom-32 -left-32 h-64 w-64 animate-float-medium rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-500/10" />
+        {/* 👇 Added bg-white/dark:bg-slate-900 to solidly cover the right side */}
+        <div className="pointer-events-none absolute -top-32 -right-32 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/10" />
+        <div className="pointer-events-none absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-500/10" />
 
         {/* Top navigation */}
-        <div className="relative flex items-center justify-between border-b border-gray-100/80 px-6 py-5 backdrop-blur-sm sm:px-10 dark:border-slate-800/60">
+        <div className="relative flex items-center justify-between border-b border-gray-100/80 bg-white/60 px-6 py-5 backdrop-blur-sm sm:px-10 dark:border-slate-800/60 dark:bg-slate-900/60">
           <div className="flex items-center gap-2.5 lg:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500">
               <Home className="h-5 w-5 text-white" />
@@ -208,7 +168,7 @@ const LoginPage = () => {
           <div className="w-full max-w-105">
             
             {/* Heading */}
-            <div className="mb-8 animate-fade-in-up">
+            <div className="mb-8">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200/60 bg-emerald-50/80 px-3 py-1 dark:border-emerald-500/30 dark:bg-emerald-500/10">
                 <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -224,7 +184,7 @@ const LoginPage = () => {
             </div>
 
             {/* Demo Hint Box */}
-            <div className="mb-6 flex animate-fade-in-up items-start gap-3 rounded-xl border border-emerald-200/60 bg-linear-to-br from-emerald-50 to-teal-50/50 p-3.5 delay-100 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-teal-500/5">
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200/60 bg-linear-to-br from-emerald-50 to-teal-50/50 p-3.5 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-teal-500/5">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15">
                 <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
@@ -240,21 +200,18 @@ const LoginPage = () => {
 
             {/* Error Alert */}
             {error && (
-              <div className="mb-6 flex animate-shake items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5 dark:border-red-500/30 dark:bg-red-500/10">
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5 dark:border-red-500/30 dark:bg-red-500/10">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
                 <p className="text-xs font-medium text-red-700 dark:text-red-400">{error}</p>
               </div>
             )}
 
-            {/* 👇 CLEAN FORM — Regular Labels Above Inputs */}
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               
               {/* Email */}
-              <div className="animate-fade-in-up delay-200">
-                <label 
-                  htmlFor="email"
-                  className="mb-2 block text-xs font-semibold text-gray-700 dark:text-slate-300"
-                >
+              <div>
+                <label htmlFor="email" className="mb-2 block text-xs font-semibold text-gray-700 dark:text-slate-300">
                   Email Address
                 </label>
                 <div className="relative">
@@ -273,18 +230,12 @@ const LoginPage = () => {
               </div>
 
               {/* Password */}
-              <div className="animate-fade-in-up delay-300">
+              <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <label 
-                    htmlFor="password"
-                    className="block text-xs font-semibold text-gray-700 dark:text-slate-300"
-                  >
+                  <label htmlFor="password" className="block text-xs font-semibold text-gray-700 dark:text-slate-300">
                     Password
                   </label>
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                  >
+                  <button type="button" className="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
                     Forgot password?
                   </button>
                 </div>
@@ -312,7 +263,7 @@ const LoginPage = () => {
               </div>
 
               {/* Remember me */}
-              <div className="flex animate-fade-in-up items-center pt-1 delay-400">
+              <div className="flex items-center justify-between pt-1">
                 <label className="flex cursor-pointer items-center gap-2.5">
                   <input
                     type="checkbox"
@@ -329,17 +280,10 @@ const LoginPage = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || success}
-                className="btn-shine group relative flex w-full animate-fade-in-up items-center justify-center gap-2 overflow-hidden rounded-xl bg-linear-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-emerald-500/40 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-90 delay-500"
+                disabled={isLoading}
+                className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-emerald-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-emerald-500/40 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-70 dark:shadow-emerald-500/10"
               >
-                {success ? (
-                  <>
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path className="animate-draw-check" d="M20 6L9 17l-5-5" />
-                    </svg>
-                    Welcome back!
-                  </>
-                ) : isLoading ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Signing in...
@@ -347,31 +291,31 @@ const LoginPage = () => {
                 ) : (
                   <>
                     Sign In
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}
               </button>
             </form>
 
             {/* Divider */}
-            <div className="relative my-8 animate-fade-in-up delay-600">
+            <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-slate-700/60" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:bg-slate-950 dark:text-slate-500">
+                <span className="bg-gray-50 px-3 text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:bg-slate-950 dark:text-slate-500">
                   Or continue with
                 </span>
               </div>
             </div>
 
             {/* Social Buttons */}
-            <div className="grid animate-fade-in-up grid-cols-2 gap-3 delay-600">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="group flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -381,9 +325,9 @@ const LoginPage = () => {
               </button>
               <button
                 type="button"
-                className="group flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
                 </svg>
                 GitHub
@@ -391,7 +335,7 @@ const LoginPage = () => {
             </div>
 
             {/* Legal footer */}
-            <p className="mt-10 animate-fade-in text-center text-xs text-gray-400 delay-700 dark:text-slate-500">
+            <p className="mt-10 text-center text-xs text-gray-400 dark:text-slate-500">
               By signing in, you agree to our{' '}
               <button className="font-medium text-gray-600 hover:underline dark:text-slate-400">Terms of Service</button>
               {' '}and{' '}
