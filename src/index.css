@@ -1,10 +1,6 @@
 @import "tailwindcss";
-
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ============================================ */
-/* Page background — matches the app theme      */
-/* ============================================ */
 html {
   background-color: #f9fafb; /* gray-50 */
 }
@@ -14,21 +10,13 @@ html.dark {
 
 body {
   background-color: inherit;
-  min-height: 100vh;
   overscroll-behavior-y: none;
 }
 
 /* ============================================ */
-/* Custom container size (max-w-8xl)            */
+/* Login Page Animations                        */
 /* ============================================ */
-/* @theme {
-  --container-8xl: 88rem;   /* 1408px */
-    /* --container-9xl: 96rem;  1536px — optional */
 
-
-/* ============================================ */
-/* Animations                                   */
-/* ============================================ */
 @keyframes float-slow {
   0%, 100% { transform: translateY(0px) translateX(0px); }
   33% { transform: translateY(-30px) translateX(20px); }
@@ -51,8 +39,14 @@ body {
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
@@ -76,16 +70,28 @@ body {
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes scale-x {
-  to { transform: scaleX(1); }
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
-@keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes shine {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
 }
 
-/* Utility animation classes */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Utility classes */
 .animate-float-slow { animation: float-slow 20s ease-in-out infinite; }
 .animate-float-medium { animation: float-medium 15s ease-in-out infinite; }
 .animate-float-fast { animation: float-fast 10s ease-in-out infinite; }
@@ -105,10 +111,6 @@ body {
   stroke-dashoffset: 100;
   animation: draw-check 0.6s ease-out 0.2s forwards;
 }
-.animate-dropdown-in {
-  animation: dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: top center;
-}
 
 /* Staggered delays */
 .delay-100 { animation-delay: 0.1s; }
@@ -119,14 +121,247 @@ body {
 .delay-600 { animation-delay: 0.6s; }
 .delay-700 { animation-delay: 0.7s; }
 
-/* ============================================ */
-/* Mobile performance: hide heavy blurs         */
-/* ============================================ */
-@media (max-width: 640px) {
-  .animate-float-slow,
-  .animate-float-medium,
-  .animate-float-fast,
-  .animate-gradient-shift {
-    animation: none !important;
+/* Shine effect for buttons */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  transition: transform 0.6s;
+}
+.btn-shine:hover::before {
+  transform: translateX(200%) skewX(-15deg);
+}
+
+/* Floating label wrapper */
+.floating-label-wrapper {
+  position: relative;
+}
+.floating-label-wrapper input {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+.floating-label-wrapper input:focus + label,
+.floating-label-wrapper input:not(:placeholder-shown) + label {
+  transform: translateY(-0.7rem) scale(0.85);
+  color: #10b981;
+  font-weight: 600;
+}
+.dark .floating-label-wrapper input:focus + label,
+.dark .floating-label-wrapper input:not(:placeholder-shown) + label {
+  color: #34d399;
+}
+.floating-label-wrapper label {
+  position: absolute;
+  left: 2.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  transform-origin: left center;
+}
+
+/* Typing reveal using clip-path (doesn't affect layout) */
+.typing-text {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  animation: typing-reveal 1.2s steps(11, end) 0.9s forwards;
+}
+
+@keyframes typing-reveal {
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Blinking cursor that sits at the end of the word */
+.typing-cursor {
+  position: absolute;
+  top: 0.08em;
+  bottom: 0.08em;
+  right: -4px;
+  width: 3px;
+  border-radius: 2px;
+  background: #34d399;
+  opacity: 0;
+  animation: 
+    cursor-appear 0s linear 0.9s forwards,
+    cursor-blink 0.9s step-end infinite 0.9s;
+}
+
+@keyframes cursor-appear {
+  to { opacity: 1; }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Keep this one for the underline */
+@keyframes scale-x {
+  to { transform: scaleX(1); }
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 👇 Skip rendering for off-screen list items */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Nicer scrollbar that doesn't take up space */
+main::-webkit-scrollbar {
+  width: 6px;
+}
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+main::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+}
+main::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
+}
+/* 
+@theme {
+  --container-8xl: 88rem;   /* 1408px — 128px wider than 7xl 
+  --container-9xl: 96rem;   /* 1536px — optional, if you want even wider */
+
+/* :root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+} */
