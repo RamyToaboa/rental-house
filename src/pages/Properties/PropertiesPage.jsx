@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { 
   Search, Plus, MapPin, Bed, Bath, Square, ArrowUpRight, 
@@ -6,7 +7,6 @@ import {
 } from 'lucide-react';
 import AddPropertyModal from './AddPropertyModal'; 
 
-// 👇 1. Initial Mock Data (used only the first time you visit)
 const initialMockData = [
   { id: 1, title: 'Modern Downtown Loft', location: 'Financial District, NYC', price: '$1,250,000', beds: 3, baths: 2, sqft: '1,850', type: 'For Sale', tag: 'Commercial', description: 'Experience luxury living in the heart of the financial district. This loft features floor-to-ceiling windows and premium finishes.', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=400&fit=crop' },
   { id: 2, title: 'Lakeside Villa', location: 'Lake Tahoe, CA', price: '$2,850,000', beds: 4, baths: 3, sqft: '3,200', type: 'For Sale', tag: 'Residential', description: 'A stunning villa with panoramic lake views. Includes a private dock, spacious patio, and a gourmet kitchen.', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=400&fit=crop' },
@@ -25,9 +25,10 @@ const PropertiesPage = () => {
   
   const [sortBy, setSortBy] = useState('name');
   const [isSortOpen, setIsSortOpen] = useState(false);
-  const sortRef = useRef(null);
+  const [sortPos, setSortPos] = useState({ top: 0, left: 0, width: 0 });
+  const sortButtonRef = useRef(null);
+  const sortMenuRef = useRef(null);
 
-  // 👇 2. Initialize state from localStorage, or fallback to mock data
   const [properties, setProperties] = useState(() => {
     try {
       const saved = localStorage.getItem('realEstateProperties');
@@ -38,7 +39,6 @@ const PropertiesPage = () => {
     }
   });
 
-  // 👇 3. Sync to localStorage every time properties change
   useEffect(() => {
     try {
       localStorage.setItem('realEstateProperties', JSON.stringify(properties));
@@ -47,15 +47,65 @@ const PropertiesPage = () => {
     }
   }, [properties]);
 
+  // 👇 Position the sort dropdown (viewport-aware)
+  useLayoutEffect(() => {
+    if (!isSortOpen || !sortButtonRef.current) return;
+    const rect = sortButtonRef.current.getBoundingClientRect();
+    const padding = 12;
+    const width = 160;
+
+    let left = rect.right - width;
+    left = Math.max(padding, Math.min(left, window.innerWidth - width - padding));
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const approxHeight = 180;
+    const top = spaceBelow < approxHeight && rect.top > approxHeight
+      ? rect.top - 8 - approxHeight
+      : rect.bottom + 8;
+
+    setSortPos({ top, left, width });
+  }, [isSortOpen]);
+
+  // 👇 Reposition on resize
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sortRef.current && !sortRef.current.contains(event.target)) {
+    if (!isSortOpen) return;
+    const handleResize = () => {
+      if (!sortButtonRef.current) return;
+      const rect = sortButtonRef.current.getBoundingClientRect();
+      const padding = 12;
+      const width = 160;
+      let left = rect.right - width;
+      left = Math.max(padding, Math.min(left, window.innerWidth - width - padding));
+      setSortPos(prev => ({ ...prev, left }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSortOpen]);
+
+  // 👇 Click outside + scroll close
+  useEffect(() => {
+    if (!isSortOpen) return;
+    const handleClickOutside = (e) => {
+      if (
+        sortButtonRef.current && !sortButtonRef.current.contains(e.target) &&
+        sortMenuRef.current && !sortMenuRef.current.contains(e.target)
+      ) {
         setIsSortOpen(false);
       }
     };
+    const handleScroll = (e) => {
+      if (sortMenuRef.current && sortMenuRef.current.contains(e.target)) return;
+      setIsSortOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isSortOpen]);
 
   const handleAddProperty = (newProperty) => {
     setProperties([newProperty, ...properties]);
@@ -84,9 +134,11 @@ const PropertiesPage = () => {
     { value: 'location', label: 'Location' },
   ];
 
+  const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.label || 'Name';
+
   return (
     <div className="space-y-6">
-      {/* Header Area */}
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Properties</h1>
@@ -137,33 +189,19 @@ const PropertiesPage = () => {
           </button>
         </div>
         
-        {/* Sort Dropdown */}
-        <div className="relative" ref={sortRef}>
-          <button 
-            onClick={() => setIsSortOpen(!isSortOpen)}
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white transition-colors"
-          >
-            Sort by {sortOptions.find(o => o.value === sortBy)?.label} <ChevronDown className={`h-4 w-4 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isSortOpen && (
-            <div className="absolute right-0 z-50 mt-2 w-36 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
-              {sortOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    setSortBy(option.value);
-                    setIsSortOpen(false);
-                  }}
-                  className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
-                >
-                  {option.label}
-                  {sortBy === option.value && <Check className="h-4 w-4 text-emerald-500" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* 👇 Sort Dropdown Button */}
+        <button
+          ref={sortButtonRef}
+          onClick={() => setIsSortOpen(!isSortOpen)}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+            isSortOpen
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'
+              : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white'
+          }`}
+        >
+          Sort by {currentSortLabel}
+          <ChevronDown className={`h-4 w-4 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
       {/* Property Grid */}
@@ -173,10 +211,16 @@ const PropertiesPage = () => {
             to={`/properties/${property.id}`} 
             state={{ property }} 
             key={property.id} 
-            className="group block cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+            className="group block cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="relative h-48 w-full overflow-hidden">
-              <img src={property.image} alt={property.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <img 
+                src={property.image} 
+                alt={property.title} 
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" 
+              />
               <span className={`absolute top-3 left-3 rounded-md px-2 py-1 text-xs font-semibold text-white ${
                 property.type === 'For Sale' ? 'bg-emerald-500' : 
                 property.type === 'For Rent' ? 'bg-blue-500' : 'bg-gray-500'
@@ -223,6 +267,50 @@ const PropertiesPage = () => {
           onClose={() => setIsModalOpen(false)} 
           onSave={handleAddProperty} 
         />
+      )}
+
+      {/* 👇 Sort Dropdown — rendered via portal, no clipping */}
+      {isSortOpen && createPortal(
+        <div
+          ref={sortMenuRef}
+          style={{
+            position: 'fixed',
+            top: `${sortPos.top}px`,
+            left: `${sortPos.left}px`,
+            width: `${sortPos.width}px`,
+            zIndex: 9999,
+          }}
+          className="animate-dropdown-in overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 dark:ring-black/20"
+        >
+          <div className="border-b border-gray-50 px-4 py-2 dark:border-slate-700/60">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+              Sort by
+            </p>
+          </div>
+          <div className="py-1">
+            {sortOptions.map((option) => {
+              const isSelected = sortBy === option.value;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setSortBy(option.value);
+                    setIsSortOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors ${
+                    isSelected
+                      ? 'bg-emerald-50 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                      : 'text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {isSelected && <Check className="h-4 w-4 text-emerald-500" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

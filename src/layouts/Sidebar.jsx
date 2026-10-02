@@ -65,6 +65,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        style={{ willChange: 'transform' }}
       >
         {/* Logo */}
         <div className="flex items-center justify-between gap-3 px-6 py-8">

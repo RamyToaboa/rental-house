@@ -54,6 +54,14 @@ const AddPropertyModal = ({ onClose, onSave }) => {
   }, [isTypeOpen]);
 
   useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isTypeOpen) return;
     const handleClickOutside = (e) => {
       if (

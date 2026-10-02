@@ -66,6 +66,14 @@ const AddTenantModal = ({ onClose, onSave, tenantToEdit }) => {
   }, [isStatusOpen]);
 
   useEffect(() => {
+  // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isStatusOpen) return;
     const handleClickOutside = (e) => {
       if (

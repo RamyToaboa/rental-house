@@ -17,28 +17,24 @@ const pageInfo = {
 };
 
 const DashboardLayout = () => {
-  // 👈 THIS STATE IS CRITICAL
-  const [sidebarOpen, setSidebarOpen] = useState(false); 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const currentInfo = pageInfo[location.pathname] || { title: '', subtitle: '' };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
-      
-      {/* 👈 Pass the state and close handler to Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex w-full flex-col lg:pl-64">
-        
-        {/* 👈 Pass the open handler to Topbar */}
         <Topbar 
           onMenuClick={() => setSidebarOpen(true)} 
           title={currentInfo.title} 
           subtitle={currentInfo.subtitle} 
         />
         
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto h-full max-w-8xl">
+        <main className="flex-1 overflow-y-auto overscroll-contain p-4 pb-6 sm:p-6 sm:pb-6 lg:p-8 lg:pb-6">
+          {/* 👇 Widened from 7xl to 8xl */}
+          <div className="mx-auto max-w-8xl">
             <Outlet />
           </div>
         </main>

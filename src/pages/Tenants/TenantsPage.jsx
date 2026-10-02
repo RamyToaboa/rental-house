@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, FileText, UserPlus, Calendar, Search, Bell, Plus, 
-  ChevronDown, Filter, Download, MoreVertical, ChevronRight,
-  Pencil, Trash2, AlertTriangle, Check, X
+  MoreVertical, Pencil, Trash2, AlertTriangle, X, Loader2, 
+  ChevronDown, Check, Filter, Download
 } from 'lucide-react';
 import AddTenantModal from './AddTenantModal'; 
 
@@ -18,18 +19,15 @@ const initialMockTenants = [
 
 const TenantsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tenantToEdit, setTenantToEdit] = useState(null);
-  
   const [statusFilter, setStatusFilter] = useState('All');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterRef = useRef(null);
+  const [filterPos, setFilterPos] = useState({ top: 0, left: 0, width: 0 });
+  const filterButtonRef = useRef(null);
+  const filterMenuRef = useRef(null);
 
-  // 👇 1. Dropdown now uses fixed positioning coords
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tenantToEdit, setTenantToEdit] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const menuRef = useRef(null);
-
   const [tenantToDelete, setTenantToDelete] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -38,7 +36,7 @@ const TenantsPage = () => {
     try {
       const saved = localStorage.getItem('realEstateTenants');
       return saved ? JSON.parse(saved) : initialMockTenants;
-    } catch (error) {
+    } catch {
       return initialMockTenants;
     }
   });
@@ -47,46 +45,81 @@ const TenantsPage = () => {
     try {
       localStorage.setItem('realEstateTenants', JSON.stringify(tenants));
     } catch (error) {
-      console.error("Failed to save tenants to localStorage:", error);
+      console.error("Failed to save tenants:", error);
     }
   }, [tenants]);
 
+  // 👇 Position the filter dropdown (viewport-aware)
+  useLayoutEffect(() => {
+    if (!isFilterOpen || !filterButtonRef.current) return;
+    const rect = filterButtonRef.current.getBoundingClientRect();
+    const padding = 12;
+    const width = 176;
+
+    let left = rect.right - width;
+    left = Math.max(padding, Math.min(left, window.innerWidth - width - padding));
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const approxHeight = 200;
+    const top = spaceBelow < approxHeight && rect.top > approxHeight
+      ? rect.top - 8 - approxHeight
+      : rect.bottom + 8;
+
+    setFilterPos({ top, left, width });
+  }, [isFilterOpen]);
+
+  // Reposition on resize
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpenMenuId(null);
-      }
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
+    if (!isFilterOpen) return;
+    const handleResize = () => {
+      if (!filterButtonRef.current) return;
+      const rect = filterButtonRef.current.getBoundingClientRect();
+      const padding = 12;
+      const width = 176;
+      let left = rect.right - width;
+      left = Math.max(padding, Math.min(left, window.innerWidth - width - padding));
+      setFilterPos(prev => ({ ...prev, left }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isFilterOpen]);
+
+  // Click outside + scroll close
+  useEffect(() => {
+    if (!isFilterOpen) return;
+    const handleClickOutside = (e) => {
+      if (
+        filterButtonRef.current && !filterButtonRef.current.contains(e.target) &&
+        filterMenuRef.current && !filterMenuRef.current.contains(e.target)
+      ) {
         setIsFilterOpen(false);
+      }
+    };
+    const handleScroll = (e) => {
+      if (filterMenuRef.current && filterMenuRef.current.contains(e.target)) return;
+      setIsFilterOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isFilterOpen]);
+
+  // Close 3-dot dropdown on outside click
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('[data-menu-trigger]') && !e.target.closest('[data-menu-content]')) {
+        setOpenMenuId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // 👇 2. Handle opening menu with button position
-  const handleMenuToggle = (e, tenantId) => {
-    if (openMenuId === tenantId) {
-      setOpenMenuId(null);
-      return;
-    }
-    
-    const buttonRect = e.currentTarget.getBoundingClientRect();
-    const menuWidth = 144; // w-36 = 144px
-    const menuHeight = 90; // approx height of dropdown
-
-    // Check if menu will overflow bottom of screen
-    const spaceBelow = window.innerHeight - buttonRect.bottom;
-    const top = spaceBelow < menuHeight 
-      ? buttonRect.top - menuHeight - 4 // open above
-      : buttonRect.bottom + 4; // open below
-
-    // Check if menu will overflow right side
-    const left = buttonRect.right - menuWidth;
-
-    setMenuPosition({ top, left });
-    setOpenMenuId(tenantId);
-  };
+  }, [openMenuId]);
 
   const handleSaveTenant = (tenantData) => {
     if (tenantToEdit) {
@@ -139,7 +172,6 @@ const TenantsPage = () => {
       alert("No tenants to export.");
       return;
     }
-
     const headers = ['Name', 'Email', 'Phone', 'Property', 'Unit', 'Lease Start', 'Lease End', 'Rent', 'Status'];
     const csvRows = dataToExport.map(t => [
       `"${t.name.replace(/"/g, '""')}"`,
@@ -152,7 +184,6 @@ const TenantsPage = () => {
       `"${t.rent.replace(/"/g, '""')}"`,
       `"${t.status.replace(/"/g, '""')}"`
     ].join(','));
-
     const csvString = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -170,7 +201,6 @@ const TenantsPage = () => {
       tenant.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tenant.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tenant.phone.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesStatus = statusFilter === 'All' || tenant.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -205,18 +235,15 @@ const TenantsPage = () => {
     }
   };
 
+  const filterOptions = ['All', 'Active', 'Pending', 'Inactive'];
+
   return (
     <div className="space-y-6">
-      
       {/* Header Area */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
-            <span>Dashboard</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="font-medium text-gray-900 dark:text-white">Tenants</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">Tenants</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tenants</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Manage your tenants and applications</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -278,38 +305,20 @@ const TenantsPage = () => {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">All Tenants</h2>
           
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                  statusFilter !== 'All' 
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' 
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Filter className="h-4 w-4" /> 
-                {statusFilter === 'All' ? 'Filter' : `Filter: ${statusFilter}`}
-                <ChevronDown className={`h-3 w-3 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isFilterOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                  {['All', 'Active', 'Pending', 'Inactive'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setIsFilterOpen(false);
-                      }}
-                      className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
-                    >
-                      {status}
-                      {statusFilter === status && <Check className="h-4 w-4 text-emerald-500" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* 👇 Filter Button — triggers portal dropdown */}
+            <button
+              ref={filterButtonRef}
+              onClick={() => setIsFilterOpen(v => !v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                statusFilter !== 'All' 
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' 
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Filter className="h-4 w-4" /> 
+              {statusFilter === 'All' ? 'Filter' : `Filter: ${statusFilter}`}
+              <ChevronDown className={`h-3 w-3 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+            </button>
 
             <button 
               onClick={handleExport}
@@ -343,7 +352,6 @@ const TenantsPage = () => {
           </div>
         )}
 
-        {/* 👇 Removed `relative` here so the dropdown doesn't get clipped */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-slate-800/50 dark:text-slate-400">
@@ -353,7 +361,7 @@ const TenantsPage = () => {
                     type="checkbox" 
                     checked={allVisibleSelected}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" 
+                    className="cursor-pointer rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" 
                   />
                 </th>
                 <th className="px-6 py-4 font-medium">Tenant</th>
@@ -382,7 +390,7 @@ const TenantsPage = () => {
                         type="checkbox" 
                         checked={isSelected}
                         onChange={() => toggleSelect(tenant.id)}
-                        className="rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" 
+                        className="cursor-pointer rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" 
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -390,7 +398,9 @@ const TenantsPage = () => {
                         <img 
                           src={tenant.avatar} 
                           alt={tenant.name} 
-                          className="h-9 w-9 rounded-full object-cover border border-gray-200 dark:border-slate-700" 
+                          loading="lazy"
+                          decoding="async"
+                          className="h-9 w-9 rounded-full border border-gray-200 object-cover dark:border-slate-700" 
                           onError={(e) => {
                             e.target.src = `https://i.pravatar.cc/150?u=${tenant.id}`;
                           }}
@@ -424,13 +434,34 @@ const TenantsPage = () => {
                       <p className="text-xs text-gray-500 dark:text-slate-400">{tenant.email}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {/* 👇 Just the button — dropdown now renders elsewhere */}
-                      <button 
-                        onClick={(e) => handleMenuToggle(e, tenant.id)}
-                        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
+                      <div className="relative inline-block">
+                        <button 
+                          data-menu-trigger
+                          onClick={() => setOpenMenuId(openMenuId === tenant.id ? null : tenant.id)}
+                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {openMenuId === tenant.id && (
+                          <div 
+                            data-menu-content
+                            className="absolute right-0 z-50 mt-1 w-36 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
+                          >
+                            <button
+                              onClick={() => openEditModal(tenant)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
+                            >
+                              <Pencil className="h-3.5 w-3.5" /> Edit
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(tenant)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -441,45 +472,13 @@ const TenantsPage = () => {
           {filteredTenants.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-lg font-medium text-gray-900 dark:text-white">No tenants found</p>
-              <p className="text-sm text-gray-500 dark:text-slate-400">
-                Try adjusting your search or filter to see more results.
-              </p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">Try adjusting your search or filter.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* 👇 FLOATING DROPDOWN — Rendered outside the table so it escapes scroll containers */}
-      {openMenuId && (
-        <div 
-          ref={menuRef}
-          style={{ 
-            position: 'fixed', 
-            top: `${menuPosition.top}px`, 
-            left: `${menuPosition.left}px`,
-            zIndex: 999 
-          }}
-          className="w-36 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"
-        >
-          {tenants.find(t => t.id === openMenuId) && (
-            <>
-              <button
-                onClick={() => openEditModal(tenants.find(t => t.id === openMenuId))}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50"
-              >
-                <Pencil className="h-3.5 w-3.5" /> Edit
-              </button>
-              <button
-                onClick={() => openDeleteModal(tenants.find(t => t.id === openMenuId))}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
+      {/* Add/Edit Modal */}
       {isModalOpen && (
         <AddTenantModal 
           key={tenantToEdit ? `edit-${tenantToEdit.id}` : 'new-tenant'}
@@ -489,9 +488,55 @@ const TenantsPage = () => {
         />
       )}
 
-      {/* Single Delete Confirmation Modal */}
+      {/* 👇 Filter Dropdown — rendered via portal (no clipping) */}
+      {isFilterOpen && createPortal(
+        <div
+          ref={filterMenuRef}
+          style={{
+            position: 'fixed',
+            top: `${filterPos.top}px`,
+            left: `${filterPos.left}px`,
+            width: `${filterPos.width}px`,
+            zIndex: 9999,
+          }}
+          className="animate-dropdown-in overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 dark:ring-black/20"
+        >
+          <div className="border-b border-gray-50 px-4 py-2 dark:border-slate-700/60">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+              Filter by status
+            </p>
+          </div>
+          <div className="py-1">
+            {filterOptions.map(option => {
+              const isSelected = statusFilter === option;
+              return (
+                <button
+                  key={option}
+                  onClick={() => { setStatusFilter(option); setIsFilterOpen(false); }}
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors ${
+                    isSelected
+                      ? 'bg-emerald-50 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                      : 'text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {option !== 'All' && (
+                      <span className={`h-2 w-2 rounded-full ${getStatusDot(option)}`} />
+                    )}
+                    {option}
+                  </span>
+                  {isSelected && <Check className="h-4 w-4 text-emerald-500" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Single Delete Confirmation */}
       {tenantToDelete && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
             <div className="flex flex-col items-center px-6 pt-8 text-center">
               <div className="rounded-full bg-red-100 p-4 dark:bg-red-500/20">
@@ -503,7 +548,6 @@ const TenantsPage = () => {
                 This action cannot be undone.
               </p>
             </div>
-
             <div className="mt-8 flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6">
               <button 
                 onClick={() => setTenantToDelete(null)} 
@@ -522,9 +566,9 @@ const TenantsPage = () => {
         </div>
       )}
 
-      {/* Bulk Delete Confirmation Modal */}
+      {/* Bulk Delete Confirmation */}
       {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
             <div className="flex flex-col items-center px-6 pt-8 text-center">
               <div className="rounded-full bg-red-100 p-4 dark:bg-red-500/20">
@@ -538,7 +582,6 @@ const TenantsPage = () => {
                 This action cannot be undone.
               </p>
             </div>
-
             <div className="mt-8 flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6">
               <button 
                 onClick={() => setShowBulkDeleteConfirm(false)} 

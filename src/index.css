@@ -1,6 +1,18 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+html {
+  background-color: #f9fafb; /* gray-50 */
+}
+html.dark {
+  background-color: #020617; /* slate-950 */
+}
+
+body {
+  background-color: inherit;
+  overscroll-behavior-y: none;
+}
+
 /* ============================================ */
 /* Login Page Animations                        */
 /* ============================================ */
@@ -216,6 +228,32 @@
 .animate-dropdown-in {
   animation: dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* 👇 Skip rendering for off-screen list items */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Nicer scrollbar that doesn't take up space */
+main::-webkit-scrollbar {
+  width: 6px;
+}
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+main::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+}
+main::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
+}
+/* 
+@theme {
+  --container-8xl: 88rem;   /* 1408px — 128px wider than 7xl 
+  --container-9xl: 96rem;   /* 1536px — optional, if you want even wider */
+
 /* :root {
   --text: #6b6375;
   --text-h: #08060d;

@@ -70,6 +70,14 @@ const SettingsModal = ({ onClose }) => {
     }
   });
 
+  useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   useEffect(() => { 
     try { localStorage.setItem('realEstateProfile', JSON.stringify(profile)); } catch {} 
   }, [profile]);
