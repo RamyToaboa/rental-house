@@ -48,7 +48,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-slate-950">
+    <div className="flex min-h-dvh w-full bg-gray-50 dark:bg-slate-950">
       
       {/* ============================================ */}
       {/* LEFT PANEL — Animated Brand Showcase         */}
@@ -56,7 +56,7 @@ const LoginPage = () => {
       <div 
         ref={containerRef}
         onMouseMove={handleMouseMove}
-        className="relative hidden w-1/2 overflow-hidden bg-slate-900 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16"
+        className="relative hidden min-h-dvh w-1/2 overflow-hidden bg-slate-900 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16"
       >
         
         <div className="absolute inset-0 animate-gradient-shift bg-linear-to-br from-emerald-600 via-teal-700 to-emerald-900" />
@@ -180,7 +180,7 @@ const LoginPage = () => {
       {/* ============================================ */}
       {/* RIGHT PANEL — Clean Login Form               */}
       {/* ============================================ */}
-      <div className="relative flex w-full flex-col overflow-hidden lg:w-1/2">
+      <div className="relative flex min-h-dvh w-full flex-col overflow-hidden bg-gray-50 lg:w-1/2 dark:bg-slate-950">
         
         <div className="pointer-events-none absolute -top-32 -right-32 h-64 w-64 animate-float-slow rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/10" />
         <div className="pointer-events-none absolute -bottom-32 -left-32 h-64 w-64 animate-float-medium rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-500/10" />

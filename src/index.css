@@ -1,16 +1,17 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-html {
-  background-color: #f9fafb; /* gray-50 */
-}
-html.dark {
-  background-color: #020617; /* slate-950 */
+
+html, body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* overflow-x: hidden; */
+  background-color: #f9fafb;
+  overscroll-behavior-y: none;
 }
 
-body {
-  background-color: inherit;
-  overscroll-behavior-y: none;
+html.dark, html.dark body {
+  background-color: #020617;
 }
 
 /* ============================================ */
@@ -248,6 +249,15 @@ main::-webkit-scrollbar-thumb {
 }
 main::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.6);
+}
+
+/* 👇 Hide scrollbar globally (still allows scrolling) */
+* {
+  scrollbar-width: none;           /* Firefox */
+  -ms-overflow-style: none;        /* IE / Edge */
+}
+*::-webkit-scrollbar {
+  display: none;                   /* Chrome / Safari / Edge */
 }
 /* 
 @theme {
