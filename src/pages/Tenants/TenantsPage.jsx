@@ -536,7 +536,7 @@ const TenantsPage = () => {
 
       {/* Single Delete Confirmation */}
       {tenantToDelete && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-10000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
             <div className="flex flex-col items-center px-6 pt-8 text-center">
               <div className="rounded-full bg-red-100 p-4 dark:bg-red-500/20">
@@ -568,7 +568,7 @@ const TenantsPage = () => {
 
       {/* Bulk Delete Confirmation */}
       {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-10000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
             <div className="flex flex-col items-center px-6 pt-8 text-center">
               <div className="rounded-full bg-red-100 p-4 dark:bg-red-500/20">
